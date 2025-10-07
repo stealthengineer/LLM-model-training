@@ -1,0 +1,14 @@
+﻿# Quick fix - update the train_model and evaluate functions
+# Replace lines 220-225 and 260-265
+
+# In train_model function, change:
+loss = F.cross_entropy(
+    logits[:, :-1, :].reshape(-1, model.vocab_size),
+    input_ids[:, 1:].reshape(-1).long()  # Add .long() here
+)
+
+# In evaluate function, change:
+loss = F.cross_entropy(
+    logits[:, :-1, :].reshape(-1, model.vocab_size),
+    input_ids[:, 1:].reshape(-1).long()  # Add .long() here
+)

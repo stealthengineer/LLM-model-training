@@ -1,0 +1,23 @@
+﻿# Fix the save_model function - just update line 411
+def save_model(model, history, filepath='mini_gpt_pytorch.pt'):
+    """Save model checkpoint"""
+    checkpoint = {
+        'model_state_dict': model.state_dict(),
+        'model_config': {
+            'vocab_size': model.vocab_size,
+            'd_model': model.d_model,
+            'n_heads': model.n_heads,
+            'n_layers': model.n_layers,
+            'max_seq_len': model.max_seq_len
+        },
+        'training_history': history,
+        'total_parameters': model.count_parameters()
+    }
+    
+    torch.save(checkpoint, filepath)
+    import os
+    file_size_mb = os.path.getsize(filepath) / (1024 ** 2)
+    print(f"\n✓ Model saved to: {filepath}")
+    print(f"  File size: {file_size_mb:.2f} MB")
+    print(f"  Parameters: {model.count_parameters():,}")
+    print(f"  Final loss: {history['loss'][-1]:.4f}")

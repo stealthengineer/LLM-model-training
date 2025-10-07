@@ -1,0 +1,109 @@
+﻿# Fixed line 223 and 263
+def train_model(
+    model,
+    train_data,
+    val_data,
+    n_epochs=10,
+    batch_size=64,
+    learning_rate=3e-4,
+    device='cuda',
+    eval_interval=500
+):
+    print("\n" + "=" * 80)
+    print("TRAINING REAL GPT ON SHAKESPEARE")
+    print("=" * 80)
+    print(f"Device: {device.upper()}")
+    print(f"Model parameters: {model.count_parameters():,}")
+    print(f"Batch size: {batch_size}")
+    print(f"Epochs: {n_epochs}")
+    print(f"Learning rate: {learning_rate}")
+    print("=" * 80)
+    
+    model = model.to(device)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01)
+    
+    history = {
+        'train_loss': [],
+        'val_loss': [],
+        'step': [],
+        'tokens_per_sec': []
+    }
+    
+    n_batches = len(train_data) // batch_size
+    step = 0
+    start_time = time.time()
+    total_tokens = 0
+    
+    for epoch in range(n_epochs):
+        model.train()
+        epoch_losses = []
+        
+        indices = torch.randperm(len(train_data))
+        train_data = train_data[indices]
+        
+        for batch_idx in range(n_batches):
+            batch_start = batch_idx * batch_size
+            batch_end = batch_start + batch_size
+            input_ids = train_data[batch_start:batch_end].long().to(device)  # .long() here
+            
+            logits = model(input_ids)
+            
+            loss = F.cross_entropy(
+                logits[:, :-1, :].reshape(-1, model.vocab_size),
+                input_ids[:, 1:].reshape(-1)  # Already long from above
+            )
+            
+            optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+            
+            epoch_losses.append(loss.item())
+            total_tokens += batch_size * input_ids.shape[1]
+            step += 1
+            
+            if step % eval_interval == 0:
+                val_loss = evaluate(model, val_data, batch_size, device)
+                elapsed = time.time() - start_time
+                tokens_per_sec = total_tokens / elapsed
+                
+                history['train_loss'].append(np.mean(epoch_losses[-100:]))
+                history['val_loss'].append(val_loss)
+                history['step'].append(step)
+                history['tokens_per_sec'].append(tokens_per_sec)
+                
+                print(f"Step {step:>6} | Epoch {epoch+1}/{n_epochs} | "
+                      f"Train Loss: {history['train_loss'][-1]:.4f} | "
+                      f"Val Loss: {val_loss:.4f} | "
+                      f"{tokens_per_sec:.0f} tok/s")
+                
+                model.train()
+        
+        print(f"Epoch {epoch+1} complete | Avg Loss: {np.mean(epoch_losses):.4f}")
+        print("-" * 80)
+    
+    total_time = time.time() - start_time
+    print(f"\nTraining complete in {total_time/60:.1f} minutes")
+    
+    return history
+
+@torch.no_grad()
+def evaluate(model, val_data, batch_size, device):
+    model.eval()
+    losses = []
+    
+    n_batches = min(50, len(val_data) // batch_size)
+    
+    for i in range(n_batches):
+        batch_start = i * batch_size
+        batch_end = batch_start + batch_size
+        input_ids = val_data[batch_start:batch_end].long().to(device)  # .long() here
+        
+        logits = model(input_ids)
+        loss = F.cross_entropy(
+            logits[:, :-1, :].reshape(-1, model.vocab_size),
+            input_ids[:, 1:].reshape(-1)  # Already long
+        )
+        losses.append(loss.item())
+    
+    return np.mean(losses)

@@ -1,0 +1,31 @@
+# LLM Engineering Progress Log
+
+## Phase 1: Foundations
+
+### Project 1: Tokenization & Embeddings
+**Started:** [Date]
+**Status:** In Progress
+
+#### ✅ BPE Implementation
+- Built from scratch BPE tokenizer
+- Trained on sample corpus
+- Key insight: Compression ratio improves with vocab size but plateaus around 1000 tokens
+
+#### 🔄 Token Visualizer
+- TODO: Interactive visualization
+- TODO: Merge animation
+
+#### ⏳ Embeddings Comparison
+- TODO: One-hot vs learned
+- TODO: t-SNE visualization
+
+**Experiments Run:**
+1. Vocab size vs compression: Found optimal at ~500 for small corpus
+2. Different corpora: Code vs English shows different merge patterns
+
+**Surprises:**
+- Punctuation merges happen very early
+- Common words become single tokens quickly
+
+**Resources Used:**
+- [Link to any helpful articles/videos]
